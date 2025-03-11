@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { v4 as uuid } from "uuid";
 import "./App.css";
+import { motion, AnimatePresence } from "framer-motion";
 
 function App() {
     const [inputValue, setInputValue] = useState("");
@@ -9,7 +10,9 @@ function App() {
     const [filter, setFilter] = useState("All");
     const [editingId, setEditingId] = useState(null);
     const [editText, setEditText] = useState("");
+    const [darkMode, setDarkMode] = useState(false);
 
+    // Handle adding a new todo
     function handleSubmit(e) {
         e.preventDefault();
         if (inputValue.trim() !== "") {
@@ -35,12 +38,14 @@ function App() {
 
     function saveEdit(id) {
         if (editText.trim() === "") return;
+
         setTodos(
             todos.map((todo) =>
                 todo.id === id ? { ...todo, text: editText } : todo
             )
         );
         setEditingId(null);
+        setEditText("");
     }
 
     function handleEditKeyDown(e, id) {
@@ -61,6 +66,13 @@ function App() {
                 : !todo.completed
         );
 
+    function toggleDarkMode() {
+        setDarkMode((prevMode) => {
+            const newMode = !prevMode;
+            document.body.classList.toggle("dark-mode", newMode);
+            return newMode;
+        });
+    }
     return (
         <div>
             <h1>Todo App</h1>
@@ -90,47 +102,62 @@ function App() {
                 </select>
             </form>
             <ul>
-                {filteredTodos.map((todo) => (
-                    <li
-                        key={todo.id}
-                        style={{
-                            textDecoration: todo.completed
-                                ? "line-through"
-                                : "none"
-                        }}
-                    >
-                        {editingId === todo.id ? (
+                <AnimatePresence>
+                    {filteredTodos.map((todo) => (
+                        <motion.li
+                            key={todo.id}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            transition={{ duration: 0.2 }}
+                            style={{
+                                textDecoration: todo.completed
+                                    ? "line-through"
+                                    : "none"
+                            }}
+                        >
+                            {editingId === todo.id ? (
+                                <input
+                                    type="text"
+                                    value={editText}
+                                    onChange={(e) =>
+                                        setEditText(e.target.value)
+                                    }
+                                    onBlur={() => saveEdit(todo.id)}
+                                    onKeyDown={(e) =>
+                                        handleEditKeyDown(e, todo.id)
+                                    }
+                                    autoFocus
+                                />
+                            ) : (
+                                <span>{todo.text}</span>
+                            )}
                             <input
-                                type="text"
-                                value={editText}
-                                onChange={(e) => setEditText(e.target.value)}
-                                onBlur={() => saveEdit(todo.id)}
-                                onKeyDown={(e) => handleEditKeyDown(e, todo.id)}
-                                autoFocus
+                                type="checkbox"
+                                checked={todo.completed}
+                                onChange={() => toggleComplete(todo.id)}
                             />
-                        ) : (
-                            <span>{todo.text}</span>
-                        )}
-                        <input
-                            type="checkbox"
-                            checked={todo.completed}
-                            onChange={() => toggleComplete(todo.id)}
-                        />
-                        <button onClick={() => deleteTodo(todo.id)}>❌</button>
-                        {editingId !== todo.id && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setEditingId(todo.id);
-                                    setEditText(todo.text);
-                                }}
-                            >
-                                Edit
+                            <button onClick={() => deleteTodo(todo.id)}>
+                                ❌
                             </button>
-                        )}
-                    </li>
-                ))}
+                            {editingId !== todo.id && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditingId(todo.id);
+                                        setEditText(todo.text);
+                                    }}
+                                >
+                                    Edit
+                                </button>
+                            )}
+                        </motion.li>
+                    ))}
+                </AnimatePresence>
             </ul>
+            <button onClick={toggleDarkMode}>
+                {darkMode ? "☀ Light Mode" : "🌙 Dark Mode"}
+            </button>
         </div>
     );
 }
